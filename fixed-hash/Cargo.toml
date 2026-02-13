@@ -26,7 +26,7 @@ rand = { workspace = true, default-features = false, features = ["std_rng"] }
 
 [features]
 default = ["std", "rand", "rustc-hex"]
-std = ["rustc-hex/std", "rand?/std"]
+std = ["rustc-hex/std", "rand?/std", "rand?/thread_rng"]
 
 api-dummy = [] # Feature used by docs.rs to display documentation of hash types
 

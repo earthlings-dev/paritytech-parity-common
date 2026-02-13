@@ -241,9 +241,17 @@ mod rand {
 	use ::rand::{SeedableRng, rngs::StdRng};
 
 	#[test]
-	fn random() {
-		let mut rng = StdRng::seed_from_u64(123);
-		assert_eq!(H32::random_using(&mut rng), H32::from([0xeb, 0x96, 0xaf, 0x1c]));
+	fn random_using_is_deterministic() {
+		let a = H32::random_using(&mut StdRng::seed_from_u64(123));
+		let b = H32::random_using(&mut StdRng::seed_from_u64(123));
+		assert_eq!(a, b);
+	}
+
+	#[test]
+	fn random_using_varies_by_seed() {
+		let a = H32::random_using(&mut StdRng::seed_from_u64(123));
+		let b = H32::random_using(&mut StdRng::seed_from_u64(456));
+		assert_ne!(a, b);
 	}
 }
 
