@@ -22,7 +22,7 @@ fn convert_u256_to_f64() {
 #[allow(clippy::excessive_precision, clippy::float_cmp, clippy::unreadable_literal)]
 #[cfg(feature = "std")]
 fn convert_u256_to_f64_precision_loss() {
-	assert_eq!(U256::from(u64::max_value()).to_f64_lossy(), u64::max_value() as f64,);
+	assert_eq!(U256::from(u64::MAX).to_f64_lossy(), u64::MAX as f64,);
 	assert_eq!(
 		U256::MAX.to_f64_lossy(),
 		115792089237316195423570985008687907853269984665640564039457584007913129639935.0,

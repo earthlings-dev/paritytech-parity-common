@@ -23,8 +23,8 @@ macro_rules! test {
 				($name::from(16), "0x10"),
 				($name::from(1_000), "0x3e8"),
 				($name::from(100_000), "0x186a0"),
-				($name::from(u64::max_value()), "0xffffffffffffffff"),
-				($name::from(u64::max_value()) + $name::from(1u64), "0x10000000000000000"),
+				($name::from(u64::MAX), "0xffffffffffffffff"),
+				($name::from(u64::MAX) + $name::from(1u64), "0x10000000000000000"),
 			];
 
 			for (number, expected) in tests {
@@ -42,8 +42,8 @@ macro_rules! test {
 				($name::from(16), "10"),
 				($name::from(1_000), "3e8"),
 				($name::from(100_000), "186a0"),
-				($name::from(u64::max_value()), "ffffffffffffffff"),
-				($name::from(u64::max_value()) + $name::from(1u64), "10000000000000000"),
+				($name::from(u64::MAX), "ffffffffffffffff"),
+				($name::from(u64::MAX) + $name::from(1u64), "10000000000000000"),
 			];
 
 			for (number, expected) in tests {
@@ -68,9 +68,11 @@ fn test_large_values() {
 		ser::to_string_pretty(&!U256::zero()).unwrap(),
 		"\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\""
 	);
-	assert!(ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
-		.unwrap_err()
-		.is_data());
+	assert!(
+		ser::from_str::<U256>("\"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"")
+			.unwrap_err()
+			.is_data()
+	);
 }
 
 #[test]
@@ -82,7 +84,7 @@ fn test_h160() {
 		(H160::from_low_u64_be(16), "0x0000000000000000000000000000000000000010"),
 		(H160::from_low_u64_be(1_000), "0x00000000000000000000000000000000000003e8"),
 		(H160::from_low_u64_be(100_000), "0x00000000000000000000000000000000000186a0"),
-		(H160::from_low_u64_be(u64::max_value()), "0x000000000000000000000000ffffffffffffffff"),
+		(H160::from_low_u64_be(u64::MAX), "0x000000000000000000000000ffffffffffffffff"),
 	];
 
 	for (number, expected) in tests {
@@ -100,7 +102,7 @@ fn test_h256() {
 		(H256::from_low_u64_be(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
 		(H256::from_low_u64_be(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
 		(H256::from_low_u64_be(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
-		(H256::from_low_u64_be(u64::max_value()), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
+		(H256::from_low_u64_be(u64::MAX), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
 	];
 
 	for (number, expected) in tests {
@@ -111,15 +113,21 @@ fn test_h256() {
 
 #[test]
 fn test_invalid() {
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
-		.unwrap_err()
-		.is_data());
-	assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
-		.unwrap_err()
-		.is_data());
-	assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
-		.unwrap_err()
-		.is_data());
+	assert!(
+		ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
+			.unwrap_err()
+			.is_data()
+	);
+	assert!(
+		ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
+			.unwrap_err()
+			.is_data()
+	);
+	assert!(
+		ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
+			.unwrap_err()
+			.is_data()
+	);
 	assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 	assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());

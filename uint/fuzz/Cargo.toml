@@ -11,7 +11,7 @@ rust-version = "1.56.1"
 cargo-fuzz = true
 
 [dependencies]
-uint = { path = ".." }
+uint = { version = "0.10.0", path = ".." }
 libfuzzer-sys = { git = "https://github.com/rust-fuzz/libfuzzer-sys.git" }
 rug = { version = "1.4", default-features = false, features = ["integer"] }
 

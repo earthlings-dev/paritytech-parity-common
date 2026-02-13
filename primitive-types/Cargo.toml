@@ -2,7 +2,7 @@
 name = "primitive-types"
 version = "0.14.0"
 description = "Primitive types shared by Ethereum and Substrate"
-rust-version = "1.79.0"
+rust-version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

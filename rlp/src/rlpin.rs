@@ -76,7 +76,7 @@ impl PayloadInfo {
 
 	/// Create a new object from the given bytes RLP. The bytes
 	pub fn from(header_bytes: &[u8]) -> Result<PayloadInfo, DecoderError> {
-		let l = *header_bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
+		let l = *header_bytes.first().ok_or(DecoderError::RlpIsTooShort)?;
 		if l <= 0x7f {
 			Ok(PayloadInfo::new(0, 1))
 		} else if l <= 0xb7 {
@@ -325,11 +325,7 @@ impl<'a> Rlp<'a> {
 
 	/// consumes slice prefix of length `len`
 	fn consume(bytes: &'a [u8], len: usize) -> Result<&'a [u8], DecoderError> {
-		if bytes.len() >= len {
-			Ok(&bytes[len..])
-		} else {
-			Err(DecoderError::RlpIsTooShort)
-		}
+		if bytes.len() >= len { Ok(&bytes[len..]) } else { Err(DecoderError::RlpIsTooShort) }
 	}
 }
 
@@ -395,7 +391,7 @@ impl<'a> BasicDecoder<'a> {
 	{
 		let bytes = self.rlp;
 
-		let l = *bytes.first().ok_or_else(|| DecoderError::RlpIsTooShort)?;
+		let l = *bytes.first().ok_or(DecoderError::RlpIsTooShort)?;
 
 		if l <= 0x7f {
 			Ok(f(&[l])?)
@@ -411,7 +407,7 @@ impl<'a> BasicDecoder<'a> {
 			Ok(f(d)?)
 		} else if l <= 0xbf {
 			let len_of_len = l as usize - 0xb7;
-			let begin_of_value = 1 as usize + len_of_len;
+			let begin_of_value = 1_usize + len_of_len;
 			if bytes.len() < begin_of_value {
 				return Err(DecoderError::RlpInconsistentLengthAndData)
 			}

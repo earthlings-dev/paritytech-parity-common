@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::{U128, U256, U512, U64};
+use crate::{U64, U128, U256, U512};
 use fixed_hash::*;
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
@@ -19,6 +19,7 @@ pub trait BigEndianHash {
 	type Uint;
 
 	fn from_uint(val: &Self::Uint) -> Self;
+	#[allow(clippy::wrong_self_convention)]
 	fn into_uint(&self) -> Self::Uint;
 }
 
@@ -104,7 +105,7 @@ mod tests {
 			(H160::from_low_u64_be(16), "0x0000000000000000000000000000000000000010"),
 			(H160::from_low_u64_be(1_000), "0x00000000000000000000000000000000000003e8"),
 			(H160::from_low_u64_be(100_000), "0x00000000000000000000000000000000000186a0"),
-			(H160::from_low_u64_be(u64::max_value()), "0x000000000000000000000000ffffffffffffffff"),
+			(H160::from_low_u64_be(u64::MAX), "0x000000000000000000000000ffffffffffffffff"),
 		];
 
 		for (number, expected) in tests {
@@ -122,10 +123,7 @@ mod tests {
 			(H256::from_low_u64_be(16), "0x0000000000000000000000000000000000000000000000000000000000000010"),
 			(H256::from_low_u64_be(1_000), "0x00000000000000000000000000000000000000000000000000000000000003e8"),
 			(H256::from_low_u64_be(100_000), "0x00000000000000000000000000000000000000000000000000000000000186a0"),
-			(
-				H256::from_low_u64_be(u64::max_value()),
-				"0x000000000000000000000000000000000000000000000000ffffffffffffffff",
-			),
+			(H256::from_low_u64_be(u64::MAX), "0x000000000000000000000000000000000000000000000000ffffffffffffffff"),
 		];
 
 		for (number, expected) in tests {
@@ -136,22 +134,30 @@ mod tests {
 
 	#[test]
 	fn test_parse_0x() {
-		assert!("0x0000000000000000000000000000000000000000000000000000000000000000"
-			.parse::<H256>()
-			.is_ok())
+		assert!(
+			"0x0000000000000000000000000000000000000000000000000000000000000000"
+				.parse::<H256>()
+				.is_ok()
+		)
 	}
 
 	#[test]
 	fn test_serialize_invalid() {
-		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
-			.unwrap_err()
-			.is_data());
-		assert!(ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
-			.unwrap_err()
-			.is_data());
-		assert!(ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
-			.unwrap_err()
-			.is_data());
+		assert!(
+			ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000\"")
+				.unwrap_err()
+				.is_data()
+		);
+		assert!(
+			ser::from_str::<H256>("\"0x000000000000000000000000000000000000000000000000000000000000000g\"")
+				.unwrap_err()
+				.is_data()
+		);
+		assert!(
+			ser::from_str::<H256>("\"0x00000000000000000000000000000000000000000000000000000000000000000\"")
+				.unwrap_err()
+				.is_data()
+		);
 		assert!(ser::from_str::<H256>("\"\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"0\"").unwrap_err().is_data());
 		assert!(ser::from_str::<H256>("\"10\"").unwrap_err().is_data());

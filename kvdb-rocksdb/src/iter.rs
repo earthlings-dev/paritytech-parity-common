@@ -15,7 +15,7 @@
 //! To work around this we set an upper bound to the prefix successor.
 //! See https://github.com/facebook/rocksdb/wiki/Prefix-Seek-API-Changes for details.
 
-use crate::{other_io_err, DBAndColumns, DBKeyValue};
+use crate::{DBAndColumns, DBKeyValue, other_io_err};
 use rocksdb::{DBIterator, Direction, IteratorMode, ReadOptions};
 use std::io;
 

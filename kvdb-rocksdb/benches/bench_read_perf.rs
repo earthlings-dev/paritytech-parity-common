@@ -25,10 +25,10 @@ use std::{
 	time::{Duration, Instant},
 };
 
-use alloc_counter::{count_alloc, AllocCounterSystem};
-use criterion::{criterion_group, criterion_main, Criterion};
+use alloc_counter::{AllocCounterSystem, count_alloc};
+use criterion::{Criterion, criterion_group, criterion_main};
 use ethereum_types::H256;
-use rand::{distributions::Uniform, seq::SliceRandom, Rng};
+use rand::{RngExt, seq::IndexedRandom};
 use std::hint::black_box;
 
 use kvdb_rocksdb::{Database, DatabaseConfig};
@@ -44,21 +44,19 @@ criterion_main!(benches);
 fn open_db() -> Database {
 	let tempdir_str = "./benches/_rocksdb_bench_get";
 	let cfg = DatabaseConfig::with_columns(1);
-	let db = Database::open(&cfg, tempdir_str).expect("rocksdb works");
-	db
+
+	Database::open(&cfg, tempdir_str).expect("rocksdb works")
 }
 
 /// Generate `n` random bytes +/- 20%.
 /// The variability in the payload size lets us simulate payload allocation patterns: `DBValue` is
 /// an `ElasticArray128` so sometimes we save on allocations.
 fn n_random_bytes(n: usize) -> Vec<u8> {
-	let mut rng = rand::thread_rng();
-	let variability: i64 = rng.gen_range(0..(n / 5) as i64);
+	let mut rng = rand::rng();
+	let variability: i64 = rng.random_range(0..(n / 5) as i64);
 	let plus_or_minus: i64 = if variability % 2 == 0 { 1 } else { -1 };
-	let range = Uniform::from(0..u8::max_value());
-	rng.sample_iter(&range)
-		.take((n as i64 + plus_or_minus * variability) as usize)
-		.collect()
+	let len = (n as i64 + plus_or_minus * variability) as usize;
+	(0..len).map(|_| rng.random::<u8>()).collect()
 }
 
 /// Writes `NEEDLES * NEEDLES_TO_HAYSTACK_RATIO` keys to the DB. Keys are random, 32 bytes long and
@@ -72,13 +70,13 @@ fn populate(db: &Database) -> io::Result<Vec<H256>> {
 	for i in 0..NEEDLES * NEEDLES_TO_HAYSTACK_RATIO {
 		let key = H256::random();
 		if i % NEEDLES_TO_HAYSTACK_RATIO == 0 {
-			needles.push(key.clone());
+			needles.push(key);
 			if i % 100_000 == 0 && i > 0 {
 				println!("[populate] {} keys", i);
 			}
 		}
 		// In ethereum keys are mostly 32 bytes and payloads ~140bytes.
-		batch.put(0, &key.as_bytes(), &n_random_bytes(140));
+		batch.put(0, key.as_bytes(), &n_random_bytes(140));
 	}
 	db.write(batch)?;
 	Ok(needles)
@@ -100,7 +98,7 @@ fn get(c: &mut Criterion) {
 				let start = Instant::now();
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
-					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					let needle = needles.choose(&mut rand::rng()).expect("needles is not empty");
 					black_box(db.get(0, needle.as_bytes()).unwrap());
 				}
 				elapsed = start.elapsed();
@@ -129,7 +127,7 @@ fn get(c: &mut Criterion) {
 				let start = Instant::now();
 				for _ in 0..iterations {
 					// This has no measurable impact on performance (~30ns)
-					let needle = needles.choose(&mut rand::thread_rng()).expect("needles is not empty");
+					let needle = needles.choose(&mut rand::rng()).expect("needles is not empty");
 					black_box(db.get_by_prefix(0, &needle.as_bytes()[..8]).unwrap());
 				}
 				elapsed = start.elapsed();

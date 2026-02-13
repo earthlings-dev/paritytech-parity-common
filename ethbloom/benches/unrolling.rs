@@ -6,13 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use crunchy::unroll;
-use rand::RngCore;
+use rand::Rng;
 
 fn random_data() -> [u8; 256] {
 	let mut res = [0u8; 256];
-	rand::thread_rng().fill_bytes(&mut res);
+	rand::rng().fill_bytes(&mut res);
 	res
 }
 

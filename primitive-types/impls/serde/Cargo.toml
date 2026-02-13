@@ -2,7 +2,7 @@
 name = "impl-serde"
 version = "0.5.0"
 description = "Serde serialization support for uint and fixed hash."
-rust-version = "1.56.1"
+rust-version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

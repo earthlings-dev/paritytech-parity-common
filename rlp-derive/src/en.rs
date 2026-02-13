@@ -10,9 +10,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
-	let body = if let syn::Data::Struct(s) = &ast.data {
-		s
-	} else {
+	let syn::Data::Struct(body) = &ast.data else {
 		panic!("#[derive(RlpEncodable)] is only defined for structs.");
 	};
 
@@ -44,9 +42,7 @@ pub fn impl_encodable(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 pub fn impl_encodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
-	let body = if let syn::Data::Struct(s) = &ast.data {
-		s
-	} else {
+	let syn::Data::Struct(body) = &ast.data else {
 		panic!("#[derive(RlpEncodableWrapper)] is only defined for structs.");
 	};
 
@@ -79,12 +75,13 @@ pub fn impl_encodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 fn encodable_field(index: usize, field: &syn::Field) -> TokenStream {
-	let ident = if let Some(ident) = &field.ident {
-		quote! { #ident }
-	} else {
-		let index = syn::Index::from(index);
-		quote! { #index }
-	};
+	let ident = field.ident.as_ref().map_or_else(
+		|| {
+			let index = syn::Index::from(index);
+			quote! { #index }
+		},
+		|ident| quote! { #ident },
+	);
 
 	let id = quote! { self.#ident };
 

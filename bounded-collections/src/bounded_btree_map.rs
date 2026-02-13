@@ -22,8 +22,8 @@ use alloc::collections::BTreeMap;
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{
-	de::{Error, MapAccess, Visitor},
 	Deserialize, Deserializer, Serialize,
+	de::{Error, MapAccess, Visitor},
 };
 
 /// A bounded map based on a B-Tree.
@@ -152,7 +152,7 @@ where
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut BTreeMap<K, V>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Clears the map, removing all elements.
@@ -243,7 +243,7 @@ where
 		Ok(BoundedBTreeMap::<K, T, S>::unchecked_from(
 			self.0
 				.into_iter()
-				.map(|(k, v)| (f((&k, v)).map(|t| (k, t))))
+				.map(|(k, v)| f((&k, v)).map(|t| (k, t)))
 				.collect::<Result<BTreeMap<_, _>, _>>()?,
 		))
 	}
@@ -575,11 +575,13 @@ mod test {
 			})
 			.unwrap();
 		assert_eq!(bounded.len(), 7);
-		assert!(bounded
-			.try_mutate(|v| {
-				v.insert(8, ());
-			})
-			.is_none());
+		assert!(
+			bounded
+				.try_mutate(|v| {
+					v.insert(8, ());
+				})
+				.is_none()
+		);
 	}
 
 	#[test]
@@ -651,7 +653,7 @@ mod test {
 		assert_eq!(map.len(), 4);
 		let (zero_key, zero_value) = map.get_key_value(&Unequal(0, true)).unwrap();
 		assert_eq!(zero_key.0, 0);
-		assert_eq!(zero_key.1, false);
+		assert!(!zero_key.1);
 		assert_eq!(*zero_value, 6);
 	}
 

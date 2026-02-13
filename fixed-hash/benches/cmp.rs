@@ -8,7 +8,7 @@
 
 //! Benchmarks for fixed-hash cmp implementation.
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use fixed_hash::construct_fixed_hash;
 use std::hint::black_box;
 

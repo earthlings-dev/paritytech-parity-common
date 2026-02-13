@@ -2,7 +2,7 @@
 name = "impl-codec"
 version = "0.7.1"
 description = "Parity Codec serialization support for uint and fixed hash."
-rust-version = "1.56.1"
+rust-version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

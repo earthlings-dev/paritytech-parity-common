@@ -238,7 +238,7 @@ mod from_low_u64 {
 #[cfg(feature = "rand")]
 mod rand {
 	use super::*;
-	use ::rand::{rngs::StdRng, SeedableRng};
+	use ::rand::{SeedableRng, rngs::StdRng};
 
 	#[test]
 	fn random() {
@@ -350,9 +350,8 @@ fn display_and_debug() {
 #[test]
 fn const_matching_works() {
 	const ONES: H32 = H32::repeat_byte(1);
-	match H32::repeat_byte(0) {
-		ONES => unreachable!(),
-		_ => {},
+	if H32::repeat_byte(0) == ONES {
+		unreachable!()
 	}
 }
 
@@ -371,12 +370,7 @@ mod ops {
 	fn bitand() {
 		assert_eq!(
 			lhs() & rhs(),
-			H32::from([
-				0b0011_0110 & 0b0101_0101,
-				0b0001_0011 & 0b1111_1111,
-				0b1010_1010 & 0b1100_1100,
-				0b0001_0010 & 0b0000_1111
-			])
+			H32::from([0b0011_0110 & 0b0101_0101, 0b0001_0011, 0b1010_1010 & 0b1100_1100, 0b0001_0010 & 0b0000_1111])
 		)
 	}
 

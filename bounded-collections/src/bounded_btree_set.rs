@@ -22,8 +22,8 @@ use alloc::collections::BTreeSet;
 use core::{borrow::Borrow, marker::PhantomData, ops::Deref};
 #[cfg(feature = "serde")]
 use serde::{
-	de::{Error, SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize,
+	de::{Error, SeqAccess, Visitor},
 };
 
 /// A bounded set based on a B-Tree.
@@ -141,7 +141,7 @@ where
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut BTreeSet<T>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Clears the set, removing all elements.
@@ -154,11 +154,7 @@ where
 	///
 	/// In the `Err` case, returns the inserted item so it can be further used without cloning.
 	pub fn try_insert(&mut self, item: T) -> Result<bool, T> {
-		if self.len() < Self::bound() || self.0.contains(&item) {
-			Ok(self.0.insert(item))
-		} else {
-			Err(item)
-		}
+		if self.len() < Self::bound() || self.0.contains(&item) { Ok(self.0.insert(item)) } else { Err(item) }
 	}
 
 	/// Remove an item from the set, returning whether it was previously in the set.
@@ -491,11 +487,13 @@ mod test {
 			})
 			.unwrap();
 		assert_eq!(bounded.len(), 7);
-		assert!(bounded
-			.try_mutate(|v| {
-				v.insert(8);
-			})
-			.is_none());
+		assert!(
+			bounded
+				.try_mutate(|v| {
+					v.insert(8);
+				})
+				.is_none()
+		);
 	}
 
 	#[test]
@@ -567,7 +565,7 @@ mod test {
 		assert_eq!(set.len(), 4);
 		let zero_item = set.get(&Unequal(0, true)).unwrap();
 		assert_eq!(zero_item.0, 0);
-		assert_eq!(zero_item.1, false);
+		assert!(!zero_item.1);
 	}
 
 	#[test]

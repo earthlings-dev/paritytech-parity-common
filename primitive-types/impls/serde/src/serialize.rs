@@ -8,7 +8,7 @@
 
 use alloc::{string::String, vec::Vec};
 use core::{fmt, result::Result};
-use serde::{de, Deserializer, Serializer};
+use serde::{Deserializer, Serializer, de};
 
 static CHARS: &[u8] = b"0123456789abcdef";
 
@@ -22,11 +22,7 @@ pub fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
 	let bytes = if skip_leading_zero {
 		let non_zero = bytes.iter().take_while(|b| **b == 0).count();
 		let bytes = &bytes[non_zero..];
-		if bytes.is_empty() {
-			return "0x0".into()
-		} else {
-			bytes
-		}
+		if bytes.is_empty() { return "0x0".into() } else { bytes }
 	} else if bytes.is_empty() {
 		return "0x".into()
 	} else {
@@ -96,7 +92,7 @@ impl fmt::Display for FromHexError {
 pub fn from_hex(v: &str) -> Result<Vec<u8>, FromHexError> {
 	let (v, stripped) = v.strip_prefix("0x").map_or((v, false), |v| (v, true));
 
-	let mut bytes = vec![0u8; (v.len() + 1) / 2];
+	let mut bytes = vec![0u8; v.len().div_ceil(2)];
 	from_hex_raw(v, &mut bytes, stripped)?;
 	Ok(bytes)
 }
@@ -436,7 +432,7 @@ mod tests {
 		// using `deserialize` to decode owned bytes into buffer with fixed length.
 		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Exact(&mut *output);
+		let expected_len = ExpectedLen::Exact(&mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 5);
 		assert_eq!(output, vec![1, 2, 3, 4, 5]);
@@ -444,7 +440,7 @@ mod tests {
 		// using `deserialize` to decode owned bytes into buffer with min/max length.
 		let des = BytesDeserializer::new(&[1, 2, 3]);
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let expected_len = ExpectedLen::Between(2, &mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 3);
 		assert_eq!(output, vec![1, 2, 3, 0, 0]);
@@ -462,7 +458,7 @@ mod tests {
 		// using `deserialize` to decode borrowed bytes into buffer with fixed length.
 		let des = BytesDeserializer::new(&[1, 2, 3, 4, 5]);
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Exact(&mut *output);
+		let expected_len = ExpectedLen::Exact(&mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 5);
 		assert_eq!(output, vec![1, 2, 3, 4, 5]);
@@ -470,7 +466,7 @@ mod tests {
 		// using `deserialize` to decode borrowed bytes into buffer with min/max length.
 		let des = BytesDeserializer::new(&[1, 2, 3]);
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let expected_len = ExpectedLen::Between(2, &mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 3);
 		assert_eq!(output, vec![1, 2, 3, 0, 0]);
@@ -488,7 +484,7 @@ mod tests {
 		// using `deserialize` to decode a sequence of bytes into a buffer with fixed length.
 		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3, 4, 5].into_iter());
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Exact(&mut *output);
+		let expected_len = ExpectedLen::Exact(&mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 5);
 		assert_eq!(output, vec![1, 2, 3, 4, 5]);
@@ -496,7 +492,7 @@ mod tests {
 		// using `deserialize` to decode a sequence of bytes into a buffer with min/max length.
 		let des = SeqDeserializer::<_, serde::de::value::Error>::new([1u8, 2, 3].into_iter());
 		let mut output = vec![0, 0, 0, 0, 0];
-		let expected_len = ExpectedLen::Between(2, &mut *output);
+		let expected_len = ExpectedLen::Between(2, &mut output);
 		let n = deserialize_check_len(des, expected_len).unwrap();
 		assert_eq!(n, 3);
 		assert_eq!(output, vec![1, 2, 3, 0, 0]);

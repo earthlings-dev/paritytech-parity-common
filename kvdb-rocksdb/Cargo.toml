@@ -2,7 +2,7 @@
 name = "kvdb-rocksdb"
 version = "0.21.0"
 description = "kvdb implementation backed by RocksDB"
-rust-version = "1.71.1"
+rust-version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -24,9 +24,7 @@ fn decodable_wrapper_parse_quotes() -> ParseQuotes {
 }
 
 pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
-	let body = if let syn::Data::Struct(s) = &ast.data {
-		s
-	} else {
+	let syn::Data::Struct(body) = &ast.data else {
 		panic!("#[derive(RlpDecodable)] is only defined for structs.");
 	};
 
@@ -60,9 +58,7 @@ pub fn impl_decodable(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 pub fn impl_decodable_wrapper(ast: &syn::DeriveInput) -> TokenStream {
-	let body = if let syn::Data::Struct(s) = &ast.data {
-		s
-	} else {
+	let syn::Data::Struct(body) = &ast.data else {
 		panic!("#[derive(RlpDecodableWrapper)] is only defined for structs.");
 	};
 
@@ -105,12 +101,13 @@ fn decodable_field(
 	quotes: ParseQuotes,
 	default_attribute_encountered: &mut bool,
 ) -> TokenStream {
-	let id = if let Some(ident) = &field.ident {
-		quote! { #ident }
-	} else {
-		let index = syn::Index::from(index);
-		quote! { #index }
-	};
+	let id = field.ident.as_ref().map_or_else(
+		|| {
+			let index = syn::Index::from(index);
+			quote! { #index }
+		},
+		|ident| quote! { #ident },
+	);
 
 	if *default_attribute_encountered {
 		index -= 1;
@@ -121,19 +118,15 @@ fn decodable_field(
 	let list = quotes.list;
 
 	let attributes = &field.attrs;
-	let default = if let Some(attr) = attributes.iter().find(|attr| attr.path().is_ident("rlp")) {
-		if *default_attribute_encountered {
-			panic!("only 1 #[rlp(default)] attribute is allowed in a struct")
-		}
+	let default = attributes.iter().find(|attr| attr.path().is_ident("rlp")).is_some_and(|attr| {
+		assert!(!*default_attribute_encountered, "only 1 #[rlp(default)] attribute is allowed in a struct");
 		match attr.parse_args() {
 			Ok(proc_macro2::TokenTree::Ident(ident)) if ident == "default" => {},
 			_ => panic!("only #[rlp(default)] attribute is supported"),
 		}
 		*default_attribute_encountered = true;
 		true
-	} else {
-		false
-	};
+	});
 
 	if let syn::Type::Path(path) = &field.ty {
 		let ident = &path.path.segments.first().expect("there must be at least 1 segment").ident;

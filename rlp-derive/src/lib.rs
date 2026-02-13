@@ -28,29 +28,33 @@ use en::{impl_encodable, impl_encodable_wrapper};
 use proc_macro::TokenStream;
 
 #[proc_macro_derive(RlpEncodable, attributes(rlp))]
+#[allow(clippy::missing_panics_doc)]
 pub fn encodable(input: TokenStream) -> TokenStream {
 	let ast = syn::parse(input).unwrap();
-	let gen = impl_encodable(&ast);
-	gen.into()
+	let tokens = impl_encodable(&ast);
+	tokens.into()
 }
 
 #[proc_macro_derive(RlpEncodableWrapper)]
+#[allow(clippy::missing_panics_doc)]
 pub fn encodable_wrapper(input: TokenStream) -> TokenStream {
 	let ast = syn::parse(input).unwrap();
-	let gen = impl_encodable_wrapper(&ast);
-	gen.into()
+	let tokens = impl_encodable_wrapper(&ast);
+	tokens.into()
 }
 
 #[proc_macro_derive(RlpDecodable, attributes(rlp))]
+#[allow(clippy::missing_panics_doc)]
 pub fn decodable(input: TokenStream) -> TokenStream {
 	let ast = syn::parse(input).unwrap();
-	let gen = impl_decodable(&ast);
-	gen.into()
+	let tokens = impl_decodable(&ast);
+	tokens.into()
 }
 
 #[proc_macro_derive(RlpDecodableWrapper)]
+#[allow(clippy::missing_panics_doc)]
 pub fn decodable_wrapper(input: TokenStream) -> TokenStream {
 	let ast = syn::parse(input).unwrap();
-	let gen = impl_decodable_wrapper(&ast);
-	gen.into()
+	let tokens = impl_decodable_wrapper(&ast);
+	tokens.into()
 }

@@ -21,7 +21,6 @@
 ///
 /// This is used internally by bounded collections to reconstruct the original
 /// input stream after reading the length prefix during decoding.
-
 #[cfg(any(feature = "scale-codec", feature = "jam-codec"))]
 pub struct PrependCompactInput<'a, I> {
 	pub encoded_len: &'a [u8],

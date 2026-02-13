@@ -21,10 +21,10 @@ use ethereum_types::H256;
 use keccak_hash::keccak;
 use kvdb_rocksdb::{Database, DatabaseConfig};
 use std::sync::{
-	atomic::{AtomicBool, Ordering as AtomicOrdering},
 	Arc,
+	atomic::{AtomicBool, Ordering as AtomicOrdering},
 };
-use sysinfo::{get_current_pid, System};
+use sysinfo::{ProcessesToUpdate, System, get_current_pid};
 
 const COLUMN_COUNT: u32 = 100;
 
@@ -67,20 +67,13 @@ impl Iterator for KeyValue {
 fn proc_memory_usage() -> u64 {
 	let mut sys = System::new();
 	let self_pid = get_current_pid().ok();
-	let memory = if let Some(self_pid) = self_pid {
-		if sys.refresh_process(self_pid) {
-			let proc = sys
-				.process(self_pid)
-				.expect("Above refresh_process succeeds, this should be Some(), qed");
-			proc.memory()
-		} else {
-			0
-		}
+
+	if let Some(self_pid) = self_pid {
+		sys.refresh_processes(ProcessesToUpdate::Some(&[self_pid]), true);
+		sys.process(self_pid).map_or(0, |proc_| proc_.memory())
 	} else {
 		0
-	};
-
-	memory
+	}
 }
 
 fn main() {
@@ -106,7 +99,7 @@ fn main() {
 	let dir = tempfile::Builder::new().prefix("rocksdb-example").tempdir().unwrap();
 
 	println!("Database is put in: {} (maybe check if it was deleted)", dir.path().to_string_lossy());
-	let db = Database::open(&config, &dir.path()).unwrap();
+	let db = Database::open(&config, dir.path()).unwrap();
 
 	let mut step = 0;
 	let mut keyvalues = KeyValue::new();

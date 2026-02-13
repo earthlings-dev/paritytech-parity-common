@@ -1,6 +1,7 @@
 [workspace.package]
 authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2021"
+edition = "2024"
+rust-version = "1.93.0"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/paritytech/parity-common"
 repository = "https://github.com/paritytech/parity-common"
@@ -19,63 +20,67 @@ members = [
 	"rlp-derive",
 	"uint",
 	"primitive-types",
+	"primitive-types/impls/codec",
+	"primitive-types/impls/num-traits",
+	"primitive-types/impls/rlp",
+	"primitive-types/impls/serde",
 	"bounded-collections",
 	"ethereum-types",
 	"ethbloom",
 ]
 
 [workspace.dependencies]
-serde_json = "1.0.41"
-criterion = "0.8.1"
-rand = { version = "0.8.0", default-features = false }
-hex-literal = "1.0.0"
-scale-info = { version = ">=1.0, <3", default-features = false }
+serde_json = "1.0.149"
+criterion = "0.8.2"
+rand = { version = "0.10.0", default-features = false, features = ["std_rng"] }
+hex-literal = "1.1.0"
+scale-info = { version = ">=1.0, <3", default-features = false, features = ["derive"] }
 quickcheck = "1"
-rustc-hex = { version = "2.0.1", default-features = false }
-static_assertions = "1.0.0"
-arbitrary = "1.0"
-tiny-keccak = "2.0"
-crunchy = { version = "0.2.2", default-features = false }
-serde = { version = "1.0.101", default-features = false }
-scale-codec = { package = "parity-scale-codec", version = "3.7.4", default-features = false }
-jam-codec = { version = "0.1.1", default-features = false }
-log = { version = "0.4.17", default-features = false }
+rustc-hex = { version = "2.1.0", default-features = false }
+static_assertions = "1.1.0"
+arbitrary = "1.4"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
+crunchy = { version = "0.2.4", default-features = false, features = ["limit_256"] }
+serde = { version = "1.0.228", default-features = false, features = ["alloc", "derive"] }
+scale-codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["max-encoded-len"] }
+jam-codec = { version = "0.1.1", default-features = false, features = ["derive", "max-encoded-len"] }
+log = { version = "0.4.29", default-features = false }
 schemars = ">=0.8.12"
-tempfile = "3.1.0"
-smallvec = "1.0.0"
-parking_lot = "0.12.0"
-num_cpus = "1.10.1"
-regex = "1.3.1"
-rocksdb = { version = "0.24.0", default-features = false }
+tempfile = "3.25.0"
+smallvec = "1.15.1"
+parking_lot = "0.12.5"
+num_cpus = "1.17.0"
+regex = "1.12.3"
+rocksdb = { version = "0.24.0", default-features = false, features = ["snappy"] }
 alloc_counter = "0.0.4"
-sysinfo = "0.30.13"
-ctrlc = "3.1.4"
+sysinfo = "0.38.1"
+ctrlc = "3.5.2"
 chrono = "0.4"
 num-traits = { version = "0.2", default-features = false }
 integer-sqrt = "0.1"
 bytes = { version = "1", default-features = false }
-syn = "2.0.72"
-quote = "1.0.2"
-proc-macro2 = "1.0.8"
-byteorder = { version = "1.4.2", default-features = false }
+syn = "2.0.115"
+quote = "1.0.44"
+proc-macro2 = "1.0.106"
+byteorder = { version = "1.5.0", default-features = false }
 hex = { version = "0.4", default-features = false }
-num-bigint = "0.4.0"
-rug = { version = "1.6.0", default-features = false }
-jsonschema = { version = "0.40", default-features = false }
-serde_derive = "1.0.101"
+num-bigint = "0.4.6"
+rug = { version = "1.28.1", default-features = false, features = ["integer", "std"] }
+jsonschema = { version = "0.41", default-features = false }
+serde_derive = "1.0.228"
 
-ethbloom = { path = "./ethbloom", default-features = false }
-ethereum-types = { path = "./ethereum-types" }
-fixed-hash = { path = "./fixed-hash", default-features = false }
-uint = { path = "./uint", default-features = false }
-uint-crate = { path = "./uint", package = "uint", default-features = false }
-primitive-types = { path = "./primitive-types", default-features = false }
-impl-codec = { path = "./primitive-types/impls/codec", default-features = false }
-impl-num-traits = { path = "./primitive-types/impls/num-traits", default-features = false }
-impl-rlp = { path = "./primitive-types/impls/rlp", default-features = false }
-impl-serde = { path = "./primitive-types/impls/serde", default-features = false }
-kvdb = { path = "./kvdb", version = "0.13" }
-kvdb-shared-tests = { path = "./kvdb-shared-tests" }
-keccak-hash = { path = "./keccak-hash" }
-rlp = { path = "./rlp" }
-rlp-derive = { path = "./rlp-derive" }
+ethbloom = { version = "0.14.1", path = "./ethbloom", default-features = false }
+ethereum-types = { version = "0.16.0", path = "./ethereum-types" }
+fixed-hash = { version = "0.8.0", path = "./fixed-hash", default-features = false }
+uint = { version = "0.10.0", path = "./uint", default-features = false }
+uint-crate = { version = "0.10.0", path = "./uint", package = "uint", default-features = false }
+primitive-types = { version = "0.14.0", path = "./primitive-types", default-features = false }
+impl-codec = { version = "0.7.1", path = "./primitive-types/impls/codec", default-features = false }
+impl-num-traits = { version = "0.2.0", path = "./primitive-types/impls/num-traits", default-features = false }
+impl-rlp = { version = "0.4.0", path = "./primitive-types/impls/rlp", default-features = false }
+impl-serde = { version = "0.5.0", path = "./primitive-types/impls/serde", default-features = false }
+kvdb = { version = "0.13", path = "./kvdb" }
+kvdb-shared-tests = { version = "0.11.0", path = "./kvdb-shared-tests" }
+keccak-hash = { version = "0.12.0", path = "./keccak-hash" }
+rlp = { version = "0.6.1", path = "./rlp" }
+rlp-derive = { version = "0.2.0", path = "./rlp-derive" }

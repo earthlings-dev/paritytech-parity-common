@@ -17,8 +17,8 @@ use std::{
 };
 
 use rocksdb::{
-	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, Options, ReadOptions, WriteBatch,
-	WriteOptions, DB,
+	BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DB, Options, ReadOptions, WriteBatch,
+	WriteOptions,
 };
 
 pub use rocksdb::DBRawIterator;
@@ -36,7 +36,7 @@ fn other_io_err<E>(e: E) -> io::Error
 where
 	E: Into<Box<dyn error::Error + Send + Sync>>,
 {
-	io::Error::new(io::ErrorKind::Other, e)
+	io::Error::other(e)
 }
 
 fn invalid_column(col: u32) -> io::Error {
@@ -110,18 +110,18 @@ impl CompactionProfile {
 			.and_then(|df_res| if df_res.status.success() { Some(df_res.stdout) } else { None })
 			.and_then(rotational_from_df_output);
 		// Read out the file and match compaction profile.
-		if let Some(hdd_check) = hdd_check_file {
-			if let Ok(mut file) = File::open(hdd_check.as_path()) {
-				let mut buffer = [0; 1];
-				if file.read_exact(&mut buffer).is_ok() {
-					// 0 means not rotational.
-					if buffer == [48] {
-						return Self::ssd()
-					}
-					// 1 means rotational.
-					if buffer == [49] {
-						return Self::hdd()
-					}
+		if let Some(hdd_check) = hdd_check_file &&
+			let Ok(mut file) = File::open(hdd_check.as_path())
+		{
+			let mut buffer = [0; 1];
+			if file.read_exact(&mut buffer).is_ok() {
+				// 0 means not rotational.
+				if buffer == [48] {
+					return Self::ssd()
+				}
+				// 1 means rotational.
+				if buffer == [49] {
+					return Self::hdd()
 				}
 			}
 		}
@@ -160,6 +160,7 @@ pub struct ColumnConfig {
 	/// The client must ensure that the comparator supplied here
 	/// orders keys *exactly* the same as the comparator provided to
 	/// previous open calls on the same DB.
+	#[allow(clippy::type_complexity)]
 	pub comparator: Option<fn(&[u8], &[u8]) -> cmp::Ordering>,
 }
 
@@ -224,7 +225,7 @@ impl DatabaseConfig {
 	///
 	/// The number of `columns` must not be zero.
 	pub fn with_configured_columns(columns: Vec<ColumnConfig>) -> Self {
-		assert!(columns.len() > 0, "the number of columns must not be zero");
+		assert!(!columns.is_empty(), "the number of columns must not be zero");
 
 		Self { columns, ..Default::default() }
 	}
@@ -289,7 +290,7 @@ impl DBAndColumns {
 	fn cf(&self, i: usize) -> io::Result<&ColumnFamily> {
 		let name = self.column_names.get(i).ok_or_else(|| invalid_column(i as u32))?;
 		self.db
-			.cf_handle(&name)
+			.cf_handle(name)
 			.ok_or_else(|| other_io_err(format!("invalid column name: {name}")))
 	}
 }
@@ -320,7 +321,7 @@ fn generate_options(config: &DatabaseConfig) -> Options {
 	} else {
 		opts.set_max_open_files(config.max_open_files);
 	}
-	opts.set_bytes_per_sync(1 * MB as u64);
+	opts.set_bytes_per_sync(MB as u64);
 	opts.set_keep_log_file_num(1);
 	opts.increase_parallelism(cmp::max(1, num_cpus::get() as i32 / 2));
 	if let Some(m) = config.max_total_wal_size {
@@ -369,7 +370,7 @@ impl Database {
 	///
 	/// The number of `config.columns` must not be zero.
 	pub fn open<P: AsRef<Path>>(config: &DatabaseConfig, path: P) -> io::Result<Database> {
-		assert!(config.columns.len() > 0, "the number of columns must not be zero");
+		assert!(!config.columns.is_empty(), "the number of columns must not be zero");
 
 		let opts = generate_options(config);
 		let block_opts = generate_block_based_options(config)?;
@@ -405,17 +406,16 @@ impl Database {
 		block_opts: &BlockBasedOptions,
 	) -> io::Result<rocksdb::DB> {
 		let cf_descriptors: Vec<_> = (0..config.columns.len())
-			.map(|i| ColumnFamilyDescriptor::new(column_names[i as usize], config.column_config(&block_opts, i as u32)))
+			.map(|i| ColumnFamilyDescriptor::new(column_names[i], config.column_config(block_opts, i as u32)))
 			.collect();
 
-		let db = match DB::open_cf_descriptors(&opts, path.as_ref(), cf_descriptors) {
+		let db = match DB::open_cf_descriptors(opts, path.as_ref(), cf_descriptors) {
 			Err(_) => {
 				// retry and create CFs
-				match DB::open_cf(&opts, path.as_ref(), &[] as &[&str]) {
+				match DB::open_cf(opts, path.as_ref(), &[] as &[&str]) {
 					Ok(mut db) => {
 						for (i, name) in column_names.iter().enumerate() {
-							let _ = db
-								.create_cf(name, &config.column_config(&block_opts, i as u32))
+							db.create_cf(name, &config.column_config(block_opts, i as u32))
 								.map_err(other_io_err)?;
 						}
 						Ok(db)
@@ -440,7 +440,7 @@ impl Database {
 		secondary_path: P,
 		column_names: &[String],
 	) -> io::Result<rocksdb::DB> {
-		let db = DB::open_cf_as_secondary(&opts, path.as_ref(), secondary_path.as_ref(), column_names);
+		let db = DB::open_cf_as_secondary(opts, path.as_ref(), secondary_path.as_ref(), column_names);
 
 		Ok(match db {
 			Ok(db) => db,
@@ -481,7 +481,7 @@ impl Database {
 				DBOp::DeletePrefix { col, prefix } => {
 					let end_prefix = kvdb::end_prefix(&prefix[..]);
 					let no_end = end_prefix.is_none();
-					let end_range = end_prefix.unwrap_or_else(|| vec![u8::max_value(); 16]);
+					let end_range = end_prefix.unwrap_or_else(|| vec![u8::MAX; 16]);
 					batch.delete_range_cf(cf, &prefix[..], &end_range[..]);
 					if no_end {
 						let prefix = if prefix.len() > end_range.len() { &prefix[..] } else { &end_range[..] };
@@ -582,19 +582,15 @@ impl Database {
 		let col = column_names.len() as u32;
 		let name = format!("col{}", col);
 		self.config.columns.push(cfg);
-		let col_config = self.config.column_config(&self.block_opts, col as u32);
-		let _ = db.create_cf(&name, &col_config).map_err(other_io_err)?;
+		let col_config = self.config.column_config(&self.block_opts, col);
+		db.create_cf(&name, &col_config).map_err(other_io_err)?;
 		column_names.push(name);
 		Ok(())
 	}
 
 	/// Get RocksDB statistics.
 	pub fn get_statistics(&self) -> HashMap<String, stats::RocksDbStatsValue> {
-		if let Some(stats) = self.opts.get_statistics() {
-			stats::parse_rocksdb_stats(&stats)
-		} else {
-			HashMap::new()
-		}
+		if let Some(stats) = self.opts.get_statistics() { stats::parse_rocksdb_stats(&stats) } else { HashMap::new() }
 	}
 
 	/// Try to catch up a secondary instance with

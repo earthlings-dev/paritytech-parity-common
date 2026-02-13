@@ -22,7 +22,7 @@ macro_rules! impl_uint_rlp {
 	($name: ident, $size: expr) => {
 		impl $crate::rlp::Encodable for $name {
 			fn rlp_append(&self, s: &mut $crate::rlp::RlpStream) {
-				let leading_empty_bytes = $size * 8 - (self.bits() + 7) / 8;
+				let leading_empty_bytes = $size * 8 - self.bits().div_ceil(8);
 				let buffer = self.to_big_endian();
 				s.encoder().encode_value(&buffer[leading_empty_bytes..]);
 			}

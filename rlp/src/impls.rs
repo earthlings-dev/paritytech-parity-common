@@ -68,7 +68,7 @@ impl Decodable for bool {
 	}
 }
 
-impl<'a> Encodable for &'a [u8] {
+impl Encodable for &[u8] {
 	fn rlp_append(&self, s: &mut RlpStream) {
 		s.encoder().encode_value(self);
 	}
@@ -220,7 +220,7 @@ impl Decodable for usize {
 	}
 }
 
-impl<'a> Encodable for &'a str {
+impl Encodable for &str {
 	fn rlp_append(&self, s: &mut RlpStream) {
 		s.encoder().encode_value(self.as_bytes());
 	}

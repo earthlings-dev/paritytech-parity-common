@@ -28,8 +28,8 @@ use core::{
 };
 #[cfg(feature = "serde")]
 use serde::{
-	de::{Error, SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize,
+	de::{Error, SeqAccess, Visitor},
 };
 
 /// A bounded vector.
@@ -187,18 +187,14 @@ where
 
 impl<'a, T: Ord, Bound: Get<u32>> Ord for BoundedSlice<'a, T, Bound> {
 	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-		self.0.cmp(&other.0)
+		self.0.cmp(other.0)
 	}
 }
 
 impl<'a, T, S: Get<u32>> TryFrom<&'a [T]> for BoundedSlice<'a, T, S> {
 	type Error = &'a [T];
 	fn try_from(t: &'a [T]) -> Result<Self, Self::Error> {
-		if t.len() <= S::get() as usize {
-			Ok(BoundedSlice(t, PhantomData))
-		} else {
-			Err(t)
-		}
+		if t.len() <= S::get() as usize { Ok(BoundedSlice(t, PhantomData)) } else { Err(t) }
 	}
 }
 
@@ -216,7 +212,7 @@ impl<'a, T, S: Get<u32>> TruncateFrom<&'a [T]> for BoundedSlice<'a, T, S> {
 
 impl<'a, T, S> Clone for BoundedSlice<'a, T, S> {
 	fn clone(&self) -> Self {
-		BoundedSlice(self.0, PhantomData)
+		*self
 	}
 }
 
@@ -547,7 +543,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// Infallible, but if the bound is zero, then it's a no-op.
 	pub fn force_push(&mut self, element: T) {
 		if Self::bound() > 0 {
-			self.0.truncate(Self::bound() as usize - 1);
+			self.0.truncate(Self::bound() - 1);
 			self.0.push(element);
 		}
 	}
@@ -564,6 +560,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 
 	/// Exactly the same semantics as [`Vec::extend`], but returns an error and does nothing if the
 	/// length of the outcome is larger than the bound.
+	#[allow(clippy::result_unit_err)]
 	pub fn try_extend(&mut self, with: impl IntoIterator<Item = T> + ExactSizeIterator) -> Result<(), ()> {
 		if with.len().saturating_add(self.len()) <= Self::bound() {
 			self.0.extend(with);
@@ -575,6 +572,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 
 	/// Exactly the same semantics as [`Vec::append`], but returns an error and does nothing if the
 	/// length of the outcome is larger than the bound.
+	#[allow(clippy::result_unit_err)]
 	pub fn try_append(&mut self, other: &mut Vec<T>) -> Result<(), ()> {
 		if other.len().saturating_add(self.len()) <= Self::bound() {
 			self.0.append(other);
@@ -593,7 +591,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	/// [`Self::try_from`].
 	pub fn try_mutate(mut self, mut mutate: impl FnMut(&mut Vec<T>)) -> Option<Self> {
 		mutate(&mut self.0);
-		(self.0.len() <= Self::bound()).then(move || self)
+		(self.0.len() <= Self::bound()).then_some(self)
 	}
 
 	/// Exactly the same semantics as [`Vec::insert`], but returns an `Err` (and is a noop) if the
@@ -627,6 +625,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	}
 
 	/// Exactly the same semantics as [`Vec::rotate_left`], but returns an `Err` (and is a noop) if `mid` is larger then the current length.
+	#[allow(clippy::result_unit_err)]
 	pub fn try_rotate_left(&mut self, mid: usize) -> Result<(), ()> {
 		if mid > self.len() {
 			return Err(())
@@ -637,6 +636,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 	}
 
 	/// Exactly the same semantics as [`Vec::rotate_right`], but returns an `Err` (and is a noop) if `mid` is larger then the current length.
+	#[allow(clippy::result_unit_err)]
 	pub fn try_rotate_right(&mut self, mid: usize) -> Result<(), ()> {
 		if mid > self.len() {
 			return Err(())
@@ -650,7 +650,7 @@ impl<T, S: Get<u32>> BoundedVec<T, S> {
 impl<T, S> BoundedVec<T, S> {
 	/// Return a [`BoundedSlice`] with the content and bound of [`Self`].
 	pub fn as_bounded_slice(&self) -> BoundedSlice<'_, T, S> {
-		BoundedSlice(&self.0[..], PhantomData::default())
+		BoundedSlice(&self.0[..], PhantomData)
 	}
 }
 
@@ -872,7 +872,7 @@ where
 	BoundRhs: Get<u32>,
 {
 	fn partial_cmp(&self, other: &BoundedSlice<'a, T, BoundRhs>) -> Option<core::cmp::Ordering> {
-		(&*self.0).partial_cmp(other.0)
+		(*self.0).partial_cmp(other.0)
 	}
 }
 
@@ -904,8 +904,8 @@ macro_rules! codec_impl {
 		use super::*;
 
 		use $codec::{
-			decode_vec_with_len, Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error,
-			Input, MaxEncodedLen,
+			Compact, Decode, DecodeLength, DecodeWithMemTracking, Encode, EncodeLike, Error, Input, MaxEncodedLen,
+			decode_vec_with_len,
 		};
 
 		impl<T: Decode, S: Get<u32>> Decode for BoundedVec<T, S> {
@@ -977,7 +977,7 @@ mod jam_codec_impl {
 #[cfg(all(test, feature = "std"))]
 mod test {
 	use super::*;
-	use crate::{bounded_vec, ConstU32};
+	use crate::{ConstU32, bounded_vec};
 	#[cfg(feature = "scale-codec")]
 	use scale_codec::{Compact, CompactLen, Decode, Encode};
 

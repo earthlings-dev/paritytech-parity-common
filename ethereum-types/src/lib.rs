@@ -13,8 +13,8 @@ mod uint;
 
 #[cfg(feature = "ethbloom")]
 pub use ethbloom::{Bloom, BloomRef, Input as BloomInput};
-pub use hash::{BigEndianHash, H128, H160, H256, H264, H32, H512, H520, H64};
-pub use uint::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind, U128, U256, U512, U64};
+pub use hash::{BigEndianHash, H32, H64, H128, H160, H256, H264, H512, H520};
+pub use uint::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind, U64, U128, U256, U512};
 
 pub type Address = H160;
 pub type Secret = H256;

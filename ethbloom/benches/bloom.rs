@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use ethbloom::{Bloom, Input};
 use hex_literal::hex;
 use tiny_keccak::{Hasher, Keccak};

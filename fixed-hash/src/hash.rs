@@ -264,7 +264,7 @@ macro_rules! construct_fixed_hash {
 		impl $crate::core_::cmp::PartialOrd for $name {
 			#[inline]
 			fn partial_cmp(&self, other: &Self) -> Option<$crate::core_::cmp::Ordering> {
-				self.as_bytes().partial_cmp(other.as_bytes())
+				Some(self.cmp(other))
 			}
 		}
 
@@ -387,7 +387,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 				&self[(Self::len_bytes() - n)..]
 			}
 
-			fn to_low_u64_with_fn(&self, from_bytes: fn([u8; 8]) -> u64) -> u64 {
+			fn to_low_u64_with_fn(self, from_bytes: fn([u8; 8]) -> u64) -> u64 {
 				let mut buf = [0x0; 8];
 				let capped = $crate::core_::cmp::min(Self::len_bytes(), 8);
 				buf[(8 - capped)..].copy_from_slice(self.least_significant_bytes(capped));
@@ -401,7 +401,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
 			#[inline]
-			pub fn to_low_u64_be(&self) -> u64 {
+			pub fn to_low_u64_be(self) -> u64 {
 				self.to_low_u64_with_fn(u64::from_be_bytes)
 			}
 
@@ -412,7 +412,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
 			#[inline]
-			pub fn to_low_u64_le(&self) -> u64 {
+			pub fn to_low_u64_le(self) -> u64 {
 				self.to_low_u64_with_fn(u64::from_le_bytes)
 			}
 
@@ -423,7 +423,7 @@ macro_rules! impl_byteorder_for_fixed_hash {
 			/// For hash type with less than 8 bytes the missing bytes
 			/// are interpreted as being zero.
 			#[inline]
-			pub fn to_low_u64_ne(&self) -> u64 {
+			pub fn to_low_u64_ne(self) -> u64 {
 				self.to_low_u64_with_fn(u64::from_ne_bytes)
 			}
 
@@ -500,12 +500,10 @@ macro_rules! impl_rand_for_fixed_hash {
 #[doc(hidden)]
 macro_rules! impl_rand_for_fixed_hash {
 	( $name:ident ) => {
-		impl $crate::rand::distributions::Distribution<$name> for $crate::rand::distributions::Standard {
+		impl $crate::rand::distr::Distribution<$name> for $crate::rand::distr::StandardUniform {
 			fn sample<R: $crate::rand::Rng + ?Sized>(&self, rng: &mut R) -> $name {
 				let mut ret = $name::zero();
-				for byte in ret.as_bytes_mut().iter_mut() {
-					*byte = rng.gen();
-				}
+				rng.fill_bytes(ret.as_bytes_mut());
 				ret
 			}
 		}
@@ -518,13 +516,12 @@ macro_rules! impl_rand_for_fixed_hash {
 			where
 				R: $crate::rand::Rng + ?Sized,
 			{
-				use $crate::rand::distributions::Distribution;
-				*self = $crate::rand::distributions::Standard.sample(rng);
+				rng.fill_bytes(self.as_bytes_mut());
 			}
 
 			/// Assign `self` to a cryptographically random value.
 			pub fn randomize(&mut self) {
-				let mut rng = $crate::rand::rngs::OsRng;
+				let mut rng = $crate::rand::rng();
 				self.randomize_using(&mut rng);
 			}
 

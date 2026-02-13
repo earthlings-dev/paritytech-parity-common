@@ -12,7 +12,7 @@
 //! cargo bench
 //! ```
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use impl_serde::impl_uint_serde;
 use serde_derive::{Deserialize, Serialize};
 use std::hint::black_box;
@@ -37,9 +37,9 @@ fn u256_to_hex(c: &mut Criterion) {
 	for input in [
 		U256::from(0),
 		U256::from(100),
-		U256::from(u32::max_value()),
-		U256::from(u64::max_value()),
-		U256::from(u128::max_value()),
+		U256::from(u32::MAX),
+		U256::from(u64::MAX),
+		U256::from(u128::MAX),
 		U256([1, 2, 3, 4]),
 	] {
 		group.bench_with_input(BenchmarkId::from_parameter(input), &input, |b, x| {
@@ -59,7 +59,7 @@ fn hex_to_u256(c: &mut Criterion) {
 		"\"0x1000000000000000000000000000000000000000000000000000000000000100\"",
 	] {
 		group.bench_with_input(BenchmarkId::from_parameter(input), &input, |b, x| {
-			b.iter(|| black_box(serde_json::from_str::<U256>(&x)))
+			b.iter(|| black_box(serde_json::from_str::<U256>(x)))
 		});
 	}
 	group.finish();
@@ -76,7 +76,7 @@ fn bytes_to_hex(c: &mut Criterion) {
 		input::HEX_65536_CHARS,
 	];
 	for param in params {
-		let input = serde_json::from_str::<Bytes>(&param).unwrap();
+		let input = serde_json::from_str::<Bytes>(param).unwrap();
 		group.bench_with_input(BenchmarkId::from_parameter(param.len()), &input, |b, x| {
 			b.iter(|| black_box(serde_json::to_string(&x)))
 		});
@@ -95,7 +95,7 @@ fn hex_to_bytes(c: &mut Criterion) {
 		input::HEX_65536_CHARS,
 	] {
 		group.bench_with_input(BenchmarkId::from_parameter(input.len()), &input, |b, x| {
-			b.iter(|| black_box(serde_json::from_str::<Bytes>(&x)))
+			b.iter(|| black_box(serde_json::from_str::<Bytes>(x)))
 		});
 	}
 	group.finish();

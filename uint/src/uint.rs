@@ -509,11 +509,8 @@ macro_rules! construct_uint {
 				#[inline]
 				pub fn as_u128(&self) -> u128 {
 					let &$name(ref arr) = self;
-					for i in 2..$n_words {
-						if arr[i] != 0 {
-							panic!("Integer overflow when casting to u128")
-						}
-
+					if arr[2..].iter().any(|&w| w != 0) {
+						panic!("Integer overflow when casting to u128")
 					}
 					self.low_u128()
 				}
@@ -525,10 +522,8 @@ macro_rules! construct_uint {
 				#[inline]
 				fn try_from(u: $name) -> $crate::core_::result::Result<u128, &'static str> {
 					let $name(arr) = u;
-					for i in 2..$n_words {
-						if arr[i] != 0 {
-							return Err("integer overflow when casting to u128");
-						}
+					if arr[2..].iter().any(|&w| w != 0) {
+						return Err("integer overflow when casting to u128");
 					}
 					Ok(((arr[1] as u128) << 64) + arr[0] as u128)
 				}
@@ -676,7 +671,7 @@ macro_rules! construct_uint {
 			#[inline]
 			fn fits_word(&self) -> bool {
 				let &$name(ref arr) = self;
-				for i in 1..$n_words { if arr[i] != 0 { return false; } }
+				if arr[1..].iter().any(|&w| w != 0) { return false; }
 				return true;
 			}
 
@@ -685,8 +680,11 @@ macro_rules! construct_uint {
 			#[inline]
 			pub fn bits(&self) -> usize {
 				let &$name(ref arr) = self;
-				for i in 1..$n_words {
-					if arr[$n_words - i] > 0 { return (0x40 * ($n_words - i + 1)) - arr[$n_words - i].leading_zeros() as usize; }
+				for (pos, &word) in arr.iter().enumerate().rev() {
+					if pos == 0 { break; }
+					if word > 0 {
+						return (0x40 * (pos + 1)) - word.leading_zeros() as usize;
+					}
 				}
 				0x40 - arr[0].leading_zeros() as usize
 			}
@@ -986,7 +984,7 @@ macro_rules! construct_uint {
 				// https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
 
 				// Set the initial guess to something higher than √self.
-				let shift: u32 = (self.bits() as u32 + 1) / 2;
+				let shift: u32 = (self.bits() as u32).div_ceil(2);
 				let mut x_prev = one << shift;
 				loop {
 					let x = (x_prev + self / x_prev) >> 1;
